@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rollbook — School Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <span class="rail-mark">R</span>
+      <div class="rail-brand-text">
+        <strong>Rollbook</strong>
+        <span>Student Register</span>
+      </div>
+    </div>
+
+    <nav class="rail-nav">
+      <button class="rail-link is-active" data-view="dashboard">
+        Dashboard
+      </button>
+      <button class="rail-link" data-view="students">
+        Students
+      </button>
+      <button class="rail-link" data-view="attendance">
+        Take Attendance
+      </button>
+      <button class="rail-link" data-view="records">
+        Records
+      </button>
+      <button class="rail-link" data-view="fees">
+        Fees
+      </button>
+    </nav>
+
+    <div class="rail-foot">
+      <span id="todayLabel"></span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="stage">
+
+    <!-- DASHBOARD -->
+    <section class="view is-active" id="view-dashboard">
+      <header class="stage-head">
+        <h1>Today's ledger</h1>
+        <p class="stage-sub">A running summary of the register, updated as you take attendance.</p>
+      </header>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <span class="stat-value" id="statTotal">0</span>
+          <span class="stat-label">Students enrolled</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statPresent">0</span>
+          <span class="stat-label">Present today</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statAbsent">0</span>
+          <span class="stat-label">Absent today</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statRate">—</span>
+          <span class="stat-label">Attendance rate</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Attendance, last 7 days</h2>
+        </div>
+        <div id="trendChart" class="trend-chart"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Classes at a glance</h2>
+        </div>
+        <div id="classSummary" class="class-grid"></div>
+      </div>
+    </section>
+
+    <!-- STUDENTS -->
+    <section class="view" id="view-students">
+      <header class="stage-head">
+        <h1>Students</h1>
+        <p class="stage-sub">Browse, search, and manage the full roll.</p>
+      </header>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Full roll</h2>
+            <p class="panel-sub">Click a student to view their full record.</p>
+          </div>
+          <div class="panel-head-actions">
+            <input type="search" id="studentSearch" placeholder="Search name or admission no.">
+            <button type="button" class="btn btn-primary" id="openStudentModalBtn">+ Add student</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="ledger responsive-table">
+            <thead>
+              <tr>
+                <th>Adm. No.</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody"></tbody>
+          </table>
+        </div>
+        <p class="empty-note" id="studentsEmptyNote"><strong>The roll is empty</strong>Click "Add student" above to register your first student.</p>
+      </div>
+    </section>
+
+    <!-- ADD STUDENT MODAL -->
+    <div class="modal-overlay" id="studentModalOverlay">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle">
+        <div class="modal-head">
+          <div>
+            <h2 id="studentModalTitle">Add a student</h2>
+            <p class="modal-sub" id="studentModalSub">Register a new student to the roll.</p>
+          </div>
+          <button type="button" class="modal-close" id="studentModalClose" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="studentForm">
+          <input type="hidden" id="f_editing_id" value="">
+          <div class="form-section">
+            <p class="form-section-label">STUDENT</p>
+            <div class="grid-form">
+              <label>
+                <span>Full name<span class="req">*</span></span>
+                <input type="text" id="f_name" placeholder="e.g. Amara Okafor" required>
+                <span class="field-hint">As it should appear on the register</span>
+              </label>
+              <label>
+                <span>Admission no.<span class="req">*</span></span>
+                <input type="text" id="f_admno" placeholder="e.g. 2026-014" required>
+                <span class="field-hint">Must be unique across the roll</span>
+              </label>
+              <label>
+                <span>Class / Grade<span class="req">*</span></span>
+                <input type="text" id="f_class" placeholder="e.g. Grade 5B" required>
+                <span class="field-hint">Used to group students on the dashboard</span>
+              </label>
+              <label>
+                <span>Gender</span>
+                <select id="f_gender">
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="form-section-label">PARENTS &amp; CONTACT</p>
+            <div class="grid-form">
+              <label>
+                <span>Father's name</span>
+                <input type="text" id="f_father" placeholder="e.g. Chidi Okafor">
+                <span class="field-hint">Leave blank if not applicable</span>
+              </label>
+              <label>
+                <span>Father's phone number</span>
+                <input type="tel" id="f_father_phone" placeholder="e.g. 024 123 4567">
+              </label>
+              <label>
+                <span>Mother's name</span>
+                <input type="text" id="f_mother" placeholder="e.g. Ngozi Okafor">
+                <span class="field-hint">Leave blank if not applicable</span>
+              </label>
+              <label>
+                <span>Mother's phone number</span>
+                <input type="tel" id="f_mother_phone" placeholder="e.g. 020 987 6543">
+              </label>
+
+              <div class="guardian-toggle-row" id="guardianToggleRow">
+                <button type="button" class="btn btn-ghost btn-add-guardian" id="addGuardianBtn">+ Add a guardian instead</button>
+                <span class="field-hint">If both parents are unavailable, add a guardian's details</span>
+              </div>
+              <div class="guardian-fields" id="guardianFields">
+                <label>
+                  <span>Guardian's name</span>
+                  <input type="text" id="f_guardian" placeholder="e.g. Efua Mensah">
+                </label>
+                <label>
+                  <span>Guardian's phone number</span>
+                  <input type="tel" id="f_guardian_phone" placeholder="e.g. 055 222 3333">
+                </label>
+                <button type="button" class="btn btn-ghost btn-remove-guardian" id="removeGuardianBtn">− Remove guardian</button>
+              </div>
+
+              <label>
+                <span>Email<span class="req">*</span></span>
+                <input type="email" id="f_email" placeholder="e.g. parent@example.com" required>
+                <span class="field-hint">Used to send fee invoices</span>
+              </label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="studentSubmitBtn">Add student</button>
+                <button type="button" class="btn btn-ghost" id="clearFormBtn">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- STUDENT PROFILE MODAL -->
+    <div class="modal-overlay" id="studentProfileOverlay">
+      <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+        <div class="modal-head">
+          <div>
+            <h2 id="profileModalTitle">Student</h2>
+            <p class="modal-sub" id="profileModalSub"></p>
+          </div>
+          <button type="button" class="modal-close" id="profileModalClose" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="profile-section">
+          <p class="form-section-label">PERSONAL</p>
+          <dl class="profile-grid" id="profilePersonal"></dl>
+        </div>
+
+        <div class="profile-section">
+          <p class="form-section-label">PARENTS &amp; CONTACT</p>
+          <dl class="profile-grid" id="profileContact"></dl>
+        </div>
+
+        <div class="profile-section">
+          <p class="form-section-label">FEES</p>
+          <div class="stat-row stat-row-compact" id="profileFeeStats"></div>
+          <button type="button" class="btn btn-ghost" id="profileViewFeesBtn">View full fee history →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <section class="view" id="view-attendance">
+      <header class="stage-head">
+        <h1>Take attendance</h1>
+        <p class="stage-sub">Mark each student, then save the day's record.</p>
+      </header>
+
+      <div class="panel">
+        <div class="attendance-controls">
+          <label>
+            <span>Date</span>
+            <input type="date" id="attDate">
+          </label>
+          <label>
+            <span>Class</span>
+            <select id="attClassFilter">
+              <option value="">All classes</option>
+            </select>
+          </label>
+          <div class="mark-all">
+            <span>Mark all:</span>
+            <button type="button" class="pill pill-present" data-mark="present">Present</button>
+            <button type="button" class="pill pill-absent" data-mark="absent">Absent</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="ledger responsive-table" id="attendanceTable">
+            <thead>
+              <tr>
+                <th>Adm. No.</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTableBody"></tbody>
+          </table>
+        </div>
+        <p class="empty-note" id="attendanceEmptyNote"><strong>No students to mark</strong>Register students on the Students page first.</p>
+
+        <div class="save-row">
+          <span id="attSummary" class="att-summary"></span>
+          <button type="button" class="btn btn-primary" id="saveAttendanceBtn">Save today's record</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECORDS -->
+    <section class="view" id="view-records">
+      <header class="stage-head">
+        <h1>Records</h1>
+        <p class="stage-sub">Look back at a single day, or trace one student's history.</p>
+      </header>
+
+      <div class="panel">
+        <div class="panel-head tabs">
+          <button class="tab-btn is-active" data-tab="byDay">By day</button>
+          <button class="tab-btn" data-tab="byStudent">By student</button>
+        </div>
+
+        <div class="tab-panel is-active" id="tab-byDay">
+          <div class="attendance-controls">
+            <label>
+              <span>Date</span>
+              <input type="date" id="recDate">
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table class="ledger responsive-table">
+              <thead>
+                <tr><th>Adm. No.</th><th>Name</th><th>Class</th><th>Status</th></tr>
+              </thead>
+              <tbody id="recDayBody"></tbody>
+            </table>
+          </div>
+          <p class="empty-note" id="recDayEmptyNote"><strong>No record for this date</strong>Attendance hasn't been taken and saved for this day yet.</p>
+        </div>
+
+        <div class="tab-panel" id="tab-byStudent">
+          <div class="attendance-controls">
+            <label>
+              <span>Student</span>
+              <select id="recStudentSelect"><option value="">Select a student…</option></select>
+            </label>
+          </div>
+          
+          <p class="empty-note is-visible" id="recStudentEmptyNote"><strong>No student selected</strong>Choose a student above to see their complete records.</p>
+
+          <div id="recStudentDetailsContainer" style="display:none;">
+            <!-- Student Details -->
+            <div class="profile-section" style="margin-top:10px;">
+              <p class="form-section-label">STUDENT DETAILS</p>
+              <dl class="profile-grid" id="recStudentPersonal"></dl>
+            </div>
+
+            <!-- Parents & Contact -->
+            <div class="profile-section" style="margin-top:20px;">
+              <p class="form-section-label">PARENTS &amp; CONTACT</p>
+              <dl class="profile-grid" id="recStudentContact"></dl>
+            </div>
+
+            <!-- Attendance History -->
+            <div class="profile-section" style="margin-top:24px;">
+              <p class="form-section-label">ATTENDANCE HISTORY</p>
+              <div class="stat-row stat-row-compact" id="recStudentStats"></div>
+              <div class="table-wrap">
+                <table class="ledger responsive-table">
+                  <thead>
+                    <tr><th>Date</th><th>Status</th></tr>
+                  </thead>
+                  <tbody id="recStudentBody"></tbody>
+                </table>
+              </div>
+              <p class="empty-note" id="recStudentAttEmptyNote"><strong>No attendance recorded</strong>Attendance has not been recorded for this student yet.</p>
+            </div>
+
+            <!-- Fees & Payments -->
+            <div class="profile-section" style="margin-top:24px;">
+              <p class="form-section-label">FEES &amp; PAYMENTS</p>
+              <div class="stat-row stat-row-compact" id="recStudentFeeStats"></div>
+
+              <div style="margin-top:16px;">
+                <h3 style="font-family:var(--font-serif); font-size:15px; margin:0 0 10px; font-weight:600;">Invoices</h3>
+                <div class="table-wrap">
+                  <table class="ledger responsive-table">
+                    <thead>
+                      <tr><th>Date</th><th>Description</th><th>Due</th><th>Amount</th></tr>
+                    </thead>
+                    <tbody id="recStudentInvoicesBody"></tbody>
+                  </table>
+                </div>
+                <p class="empty-note" id="recStudentInvEmptyNote"><strong>No invoices</strong>No invoices on file for this student.</p>
+              </div>
+
+              <div style="margin-top:18px;">
+                <h3 style="font-family:var(--font-serif); font-size:15px; margin:0 0 10px; font-weight:600;">Payments</h3>
+                <div class="table-wrap">
+                  <table class="ledger responsive-table">
+                    <thead>
+                      <tr><th>Date</th><th>Method</th><th>Note</th><th>Amount</th></tr>
+                    </thead>
+                    <tbody id="recStudentPaymentsBody"></tbody>
+                  </table>
+                </div>
+                <p class="empty-note" id="recStudentPayEmptyNote"><strong>No payments</strong>No payments on file for this student.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEES -->
+    <section class="view" id="view-fees">
+      <header class="stage-head">
+        <h1>Fees</h1>
+        <p class="stage-sub">Track invoices, payments, and outstanding balances for each student.</p>
+      </header>
+
+      <div class="panel">
+        <div class="attendance-controls">
+          <label>
+            <span>Student</span>
+            <select id="feeStudentSelect"><option value="">Select a student…</option></select>
+          </label>
+          <label>
+            <span>Currency</span>
+            <select id="currencySelect"></select>
+          </label>
+        </div>
+      </div>
+
+      <p class="empty-note" id="feeEmptyNote"><strong>No student selected</strong>Choose a student above to view their fee record.</p>
+
+      <div id="feeDetail" style="display:none">
+        <div class="stat-row stat-row-compact">
+          <div class="stat-card">
+            <span class="stat-value" id="feeTotalPaid">$0.00</span>
+            <span class="stat-label">Total paid</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="feeTotalInvoiced">$0.00</span>
+            <span class="stat-label">Total invoiced</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="feeOutstanding">$0.00</span>
+            <span class="stat-label">Outstanding balance</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="save-row" style="margin-top:0; padding-top:0; border-top:none;">
+            <span class="att-summary" id="feeParentEmailLabel"></span>
+            <button type="button" class="btn btn-primary" id="emailInvoiceBtn">✉ Email invoice to parent</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Payment history</h2>
+            <div class="panel-head-actions">
+              <button type="button" class="btn btn-primary" id="openPaymentModalBtn">+ Record payment</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="ledger responsive-table">
+              <thead>
+                <tr><th>Date</th><th>Method</th><th>Note</th><th>Amount</th><th></th></tr>
+              </thead>
+              <tbody id="paymentTableBody"></tbody>
+            </table>
+          </div>
+          <p class="empty-note" id="paymentEmptyNote"><strong>No payments recorded</strong>Record a payment once the guardian pays.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Invoices</h2>
+            <div class="panel-head-actions">
+              <button type="button" class="btn btn-primary" id="openInvoiceModalBtn">+ New invoice</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="ledger responsive-table">
+              <thead>
+                <tr><th>Date</th><th>Description</th><th>Due</th><th>Amount</th><th></th></tr>
+              </thead>
+              <tbody id="invoiceTableBody"></tbody>
+            </table>
+          </div>
+          <p class="empty-note" id="invoiceEmptyNote"><strong>No invoices yet</strong>Create an invoice to start billing this student.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- NEW INVOICE MODAL -->
+<div class="modal-overlay" id="invoiceModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="invoiceModalTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="invoiceModalTitle">New invoice</h2>
+        <p class="modal-sub">Bill this student for a fee.</p>
+      </div>
+      <button type="button" class="modal-close" id="invoiceModalClose" aria-label="Close">&times;</button>
+    </div>
+    <form id="invoiceForm">
+      <div class="grid-form">
+        <label>
+          <span>Description<span class="req">*</span></span>
+          <input type="text" id="inv_desc" placeholder="e.g. Term 2 tuition" required>
+        </label>
+        <label>
+          <span>Amount (USD)<span class="req">*</span></span>
+          <input type="number" id="inv_amount" min="0" step="0.01" placeholder="0.00" required>
+        </label>
+        <label>
+          <span>Due date</span>
+          <input type="date" id="inv_due">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Create invoice</button>
+          <button type="button" class="btn btn-ghost" id="invoiceCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- RECORD PAYMENT MODAL -->
+<div class="modal-overlay" id="paymentModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="paymentModalTitle">Record payment</h2>
+        <p class="modal-sub">Log a payment received from the guardian.</p>
+      </div>
+      <button type="button" class="modal-close" id="paymentModalClose" aria-label="Close">&times;</button>
+    </div>
+    <form id="paymentForm">
+      <div class="grid-form">
+        <label>
+          <span>Amount (USD)<span class="req">*</span></span>
+          <input type="number" id="pay_amount" min="0" step="0.01" placeholder="0.00" required>
+        </label>
+        <label>
+          <span>Method</span>
+          <select id="pay_method">
+            <option value="Cash">Cash</option>
+            <option value="Bank transfer">Bank transfer</option>
+            <option value="Mobile money">Mobile money</option>
+            <option value="Card">Card</option>
+          </select>
+        </label>
+        <label>
+          <span>Note</span>
+          <input type="text" id="pay_note" placeholder="Optional note">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Record payment</button>
+          <button type="button" class="btn btn-ghost" id="paymentCancelBtn">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
